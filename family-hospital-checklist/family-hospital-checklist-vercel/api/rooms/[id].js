@@ -1,6 +1,23 @@
 import {redis} from '../storage.js';
 const valid=/^[A-Za-z0-9_-]{24}$/;
-function parse(raw){const d=Object.fromEntries(raw||[]);return {checked:Array.from({length:12},(_,i)=>d[i]==='1'),expires:Number(d.expires),revision:Number(d.revision||0)}}
+
+function parse(raw) {
+    const d = Array.isArray(raw)
+      ? Object.fromEntries(
+          raw.reduce((pairs, value, i, arr) => {
+            if (i % 2 === 0) pairs.push([value, arr[i + 1]]);
+            return pairs;
+          }, [])
+        )
+      : (raw || {});
+  
+    return {
+      checked: Array.from({ length: 12 }, (_, i) => d[i] === '1'),
+      expires: Number(d.expires),
+      revision: Number(d.revision || 0)
+    };
+  }
+  
 export default async function handler(req,res){
  res.setHeader('Cache-Control','no-store');
  const id=String(req.query.id||'');if(!valid.test(id))return res.status(404).json({error:'not_found'});
